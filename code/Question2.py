@@ -4,12 +4,13 @@ import os
 import joblib
 import matplotlib.pyplot as plt
 import seaborn as sns
+import matplotlib.image as mpimg
+import cv2 as cv
 from itertools import combinations
 from sklearn.cluster import MiniBatchKMeans
 from sklearn.cluster import KMeans
 from sklearn import svm
 from scipy import stats
-import statistics
 
 directory_options = ['Coast', 'Forest', 'Highway', 'Kitchen', 'Mountain', 'Office', 'Store', 'Street', 'Suburb']
 directory_to_class = {'Coast':0, 'Forest':1, 'Highway':2, 'Kitchen':3, 'Mountain':4, 'Office':5, 'Store':6, 'Street':7, 'Suburb':8}
@@ -187,7 +188,6 @@ def runSimulation():
 
     print(array)
 
-
 """ Plots a static version of the simulation results using a heatmap"""
 def plot_heatmap():
     df = pd.DataFrame(np.array([
@@ -207,9 +207,93 @@ def plot_heatmap():
     plt.ylabel("K-Means Batch Size Used During Training")
     plt.show()
 
+""" Propagate a dataset and iteratively build up a confusion matrix """
+def confusion_matrix():
+    knn = load_model("_ALL")
+    clfs = load_clfs()
+    confusion = np.zeros((len(directory_options), len(directory_options)))
+    for dir_label in directory_options:
+        testset = get_features_for_directory(knn, dir_label, "test")
+        classifications = clfs_classify_directory(clfs, testset)
+        correct_dex = directory_to_class[dir_label]
+        for guess in classifications:
+            guess_dex = directory_to_class[guess]
+            confusion[correct_dex][guess_dex] += 1
+
+    df = pd.DataFrame(np.array(confusion).astype(int))
+    df.rename(columns = class_to_directory, inplace = True)
+    df = df.transpose()
+    df.rename(columns = class_to_directory, inplace = True)
+    df = df.transpose()
+
+    sns.heatmap(df, annot=True, xticklabels=True, fmt='.0f')
+    plt.title("Confusion Matrix")
+    plt.xlabel("Model Classification")
+    plt.ylabel("True Classification")
+    plt.show()
+
+def mistake_slideshow():
+    base_path='resources/assignment5material/images'
+    knn = load_model("_ALL")
+    clfs = load_clfs()
+    incorrects = []
+    # for all images corresponding to a directories test set
+    for dir_label in directory_options:
+        testset = get_features_for_directory(knn, dir_label, "test")
+        # classify all these images using the SVM array
+        classifications = clfs_classify_directory(clfs, testset)
+        # for each classification
+        for guess in range(len(classifications)):
+            prediction = classifications[guess]
+            # if we got this guess wrong
+            if prediction != dir_label:
+                # append the image we got wrong, what we guessed, and what the correct answer is
+                incorrects.append(('0' * (3-len(str(guess))) + str(guess), prediction, dir_label))
+
+    while len(incorrects) > 0:
+        index = np.random.randint(0, high=len(incorrects))
+        tup = incorrects[index]
+        impath = f'{base_path}/{tup[2]}/{"test"}/{tup[0]}.jpg'
+        img = mpimg.imread(impath)
+        img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+        imgplot = plt.imshow(img)
+        incorrects.pop(index)
+        plt.title(f'Image {tup[0]} of the {tup[2]} Directory')
+        plt.xlabel(f'The Classifier Thinks This is A {tup[1]}.        {len(incorrects)} Mistakes Remaining')
+        plt.show()
+
+def correct_slideshow():
+    base_path='resources/assignment5material/images'
+    knn = load_model("_ALL")
+    clfs = load_clfs()
+    incorrects = []
+    # for all images corresponding to a directories test set
+    for dir_label in directory_options:
+        testset = get_features_for_directory(knn, dir_label, "test")
+        # classify all these images using the SVM array
+        classifications = clfs_classify_directory(clfs, testset)
+        # for each classification
+        for guess in range(len(classifications)):
+            prediction = classifications[guess]
+            # if we got this guess wrong
+            if prediction == dir_label:
+                # append the image we got wrong, what we guessed, and what the correct answer is
+                incorrects.append(('0' * (3-len(str(guess))) + str(guess), prediction, dir_label))
+
+    while len(incorrects) > 0:
+        index = np.random.randint(0, high=len(incorrects))
+        tup = incorrects[index]
+        impath = f'{base_path}/{tup[2]}/{"test"}/{tup[0]}.jpg'
+        img = mpimg.imread(impath)
+        img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+        imgplot = plt.imshow(img)
+        incorrects.pop(index)
+        plt.title(f'Image {tup[0]} of the {tup[2]} Directory')
+        plt.xlabel(f'The Classifier Thinks This is A {tup[1]}.        {len(incorrects)} Correct Identifications Remaining')
+        plt.show()
+    
+
 if __name__ == '__main__':
     knn = load_model("_ALL")
-    data = get_features_for_directory(knn, "Street", 'train')
-    print(len(get_all_descriptors('train')))
-
+    correct_slideshow()
 
