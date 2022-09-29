@@ -2,6 +2,9 @@
 
 This assignment involves dimensionality reductions like PCA and Bag-Of-Words to reduce the dimension of a datapoint we wish to classify, whilst maintaining as much of the original information as possible. The assignment consists of two questions, we explain how to run each of them below.
 
+##
+PUT THE RESOURCES DIRECTORY INLINE WITH CODE AND REPORT! Spell resources with a small `r` please.
+
 ## Question 1
 You will notice in the Question1.py file that there exists a function by the name of ``do_full_trial(x)``. Which accepts a single argument, the desired basis width, as an integer. This will generate data equivalent to 1 of the lines from my final figure in the report, for this question. If you wish to generate those figures, call ``generate_final_accuracy_plot()``. For more detailed usage, you can view ``do_full_trial(x)`` for context on how each of the functions is used.
 
