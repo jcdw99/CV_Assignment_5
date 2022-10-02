@@ -36,6 +36,7 @@ def crop_faces():
             img = img.resize((100,100))
             img.save(f'resources/assignment5material/cropped_faces/s{person_str}_{pic_str}.jpg')
 
+
 """ This function splits the dataset into a training dataset, and a testing dataset. The datasets are arranged as follows.
  [    [person1 sample], [person2 sample], ...., [person50 sample]    ]"""
 def split_test_train(sample_size=5):
@@ -82,11 +83,11 @@ def stackify_an_img(pic):
     the stackify_an_img function """
 def find_average_vector(sample):
     avg = np.zeros(tuple(np.array(sample[0][0]).shape))
+    n = len(sample) * len(sample[0])
     for person in range(len(sample)):
         for pic in range(len(sample[person])):
             avg += np.array(sample[person][pic])
-    avg = avg/(len(sample) * len(sample[0]))
-    avg = avg.astype(np.uint8)
+    avg /= n
     return stackify_an_img(avg)
 
 """ determines the x matrix. Subtracts the avg vector, from the vector of each face, and scales the result
@@ -98,24 +99,21 @@ def get_X_mat(sample, avg_face):
         for pic in range(len(sample[person])):
             x_i = (stackify_an_img(sample[person][pic]) - avg_face)
             mat.append(x_i)
+
+    mat /= n_root
     mat = np.array(mat).transpose()
-    mat = mat/n_root
     return mat
 
 
 """ Provide the x matrix, from which the basis can be determined """
 def get_Ua_basis(mat, basis_len):
     u, s, v = np.linalg.svd(mat,full_matrices=False)
-    # 15 seems like a good number for the basis length. Now we grab the first basis_len columns
-    basis = []
-    for i in range(basis_len):
-        basis.append(np.array(u[:,i]))
-    basis = np.array(basis).transpose()
-    return basis
+    basis2 = u[:,:basis_len]
+    return basis2
  
 """ Map just a single face vector to its lower dimensional counterpart """
 def get_low_dimension_version(basis_mat, avgvec, f_vec):
-    y = np.dot(basis_mat.transpose(), (f_vec - avgvec))
+    y = np.dot(basis_mat.transpose(), f_vec - avgvec)
     return avgvec + np.dot(basis_mat, y)
 
 def get_y_version(basis_mat, avgvec, f_vec):
@@ -140,17 +138,19 @@ def plot_singular_values(X_mat):
     plt.show()
 
 
-def get_n_eigenfaces(basis, avg_vec, n):
+def get_n_eigenfaces(basis, avg_vec, n, combos=None):
+    combos = np.array([1] * n) if combos.all() ==  None else combos
     faces = []
     for i in range(n):
-        f_hat = get_low_dimension_version(basis, avg_vec, basis[:,i])
-        faces.append(Image.fromarray(unstackify_a_vec(f_hat).astype(np.uint8)))
+        faces.append(unstackify_a_vec(combos[i]*basis[:,i] + avg_vec))
     return faces
 
 """ Returns  a face comparison with the original image in the left index of the returned list, and the estimation in the right index """
 def get_face_comparison(sample, basis, avg_vec, guydex, picdex):
     fhat = get_low_dimension_version(basis, avg_vec, stackify_an_img(sample[guydex][picdex]))
     result = unstackify_a_vec(fhat)
+    result[result < 0] = 0
+    result[result > 255] = 255
     return [Image.fromarray(sample[guydex][picdex].astype(np.uint8)), Image.fromarray(result.astype(np.uint8))]
     
 
@@ -205,29 +205,24 @@ def generate_final_accuracy_plot():
 if __name__ == "__main__":
     test_set, train_set = split_test_train()
     subset_of_train_set = sample_from_set(train_set, 5)
+
     avg_vec = find_average_vector(subset_of_train_set)
     X = get_X_mat(subset_of_train_set, avg_vec)
-    # plot_singular_values(X)
     basis = get_Ua_basis(X, 240)
 
-    # avg face
-    # Image.fromarray(unstackify_a_vec(avg_vec).astype(np.uint8)).show()
-    # exit()
-    # linear combo
-    # print(get_y_version(basis, avg_vec, stackify_an_img(test_set[0][0]))[:4])
-    # exit()
-    facecomparison = get_face_comparison(subset_of_train_set, basis, avg_vec, 0, 0)
-    # estimation
-    facecomparison[1].show()
-    # eigenfaces
-    eigenfaces = get_n_eigenfaces(basis, avg_vec, 4)
-    for i in eigenfaces:
-        i.show()
+    combos = get_y_version(basis, avg_vec, stackify_an_img(train_set[0][0]))[:4]
+    facecomparison = get_face_comparison(train_set, basis, avg_vec, 0, 0)
+    print("linear combinations:")
+    print(combos)
+
+    print("Scaled combinations (1/2500):")
+    print(combos / 2500)
     exit()
-    facecomparison = get_face_comparison(subset_of_train_set, basis, avg_vec, 3, 3)
-    facecomparison[0].show()
-    facecomparison[1].show()
-    exit()
+    listy = get_n_eigenfaces(basis, avg_vec, 4, np.array([2500] * 4))
+    for i in listy:
+        Image.fromarray(i.astype(np.uint8)).show()
+
+
 
     trainset_reduced_dim = []
     trainset_labels = []
