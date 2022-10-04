@@ -9,6 +9,7 @@ import matplotlib.image as mpimg
 
 # imgsize = (108, 154)
 imgsize = (100,100)
+
 """ This set does the image resizing if neccisary. I didnt make it safe, for if the images are already small, hence the default, if False..
     I determine that the smallest image is 111 wide, and 156 tall, lets crop to 154, 108 """
 def resize_faces(do_crop=False):
@@ -35,7 +36,6 @@ def crop_faces():
             img = Image.open(f'resources/assignment5material/cropped_faces/s{person_str}_{pic_str}.jpg')
             img = img.resize((100,100))
             img.save(f'resources/assignment5material/cropped_faces/s{person_str}_{pic_str}.jpg')
-
 
 """ This function splits the dataset into a training dataset, and a testing dataset. The datasets are arranged as follows.
  [    [person1 sample], [person2 sample], ...., [person50 sample]    ]"""
@@ -142,7 +142,7 @@ def get_n_eigenfaces(basis, avg_vec, n, combos=None):
     combos = np.array([1] * n) if combos.all() ==  None else combos
     faces = []
     for i in range(n):
-        faces.append(unstackify_a_vec(combos[i]*basis[:,i] + avg_vec))
+        faces.append(convert(unstackify_a_vec(combos[i]*basis[:,i]), 0, 255, np.uint16))
     return faces
 
 """ Returns  a face comparison with the original image in the left index of the returned list, and the estimation in the right index """
@@ -201,6 +201,14 @@ def generate_final_accuracy_plot():
     plt.title("Facial Classification Accuracy Per Basis Size (Resizing)")
     plt.show()
 
+def convert(img, target_type_min, target_type_max, target_type):
+    imin = img.min()
+    imax = img.max()
+    
+    a = (target_type_max - target_type_min) / (imax - imin)
+    b = target_type_max - a * imax
+    new_img = (a * img + b).astype(target_type)
+    return new_img
 
 if __name__ == "__main__":
     test_set, train_set = split_test_train()
@@ -210,19 +218,22 @@ if __name__ == "__main__":
     X = get_X_mat(subset_of_train_set, avg_vec)
     basis = get_Ua_basis(X, 240)
 
-    combos = get_y_version(basis, avg_vec, stackify_an_img(train_set[0][0]))[:4]
+    combos = get_y_version(basis, avg_vec, stackify_an_img(train_set[0][0]))[:240]
     facecomparison = get_face_comparison(train_set, basis, avg_vec, 0, 0)
-    print("linear combinations:")
-    print(combos)
+    print("combos")
+    print((combos / np.array([1] * 240)).astype(float))
+    n=4
+    listy = get_n_eigenfaces(basis, avg_vec, 240, np.array([1] * 240))
 
-    print("Scaled combinations (1/2500):")
-    print(combos / 2500)
+
+    Image.fromarray(listy[0].astype(np.uint8)).show()
+    Image.fromarray(listy[1].astype(np.uint8)).show()
+    Image.fromarray(listy[2].astype(np.uint8)).show()
+    Image.fromarray(listy[3].astype(np.uint8)).show()
+
+    Image.fromarray(listy[239].astype(np.uint8)).show()
+
     exit()
-    listy = get_n_eigenfaces(basis, avg_vec, 4, np.array([2500] * 4))
-    for i in listy:
-        Image.fromarray(i.astype(np.uint8)).show()
-
-
 
     trainset_reduced_dim = []
     trainset_labels = []

@@ -49,6 +49,8 @@ def obtain_fresh_model(minibatchsize):
 """ Returns a non-batched version of kmeans. That is, it obtains a kmeans model using the FULL training set"""
 def train_kmeans():
     kmeans = KMeans(n_clusters=50, random_state=0)
+    print(get_all_descriptors('train').shape)
+    exit()
     kmeans.fit(get_all_descriptors('train'))
     joblib.dump(kmeans, f'kmeans/model_cluster{"_ALL"}_{iter}.joblib')
     return kmeans
@@ -295,5 +297,6 @@ def correct_slideshow():
 
 if __name__ == '__main__':
     knn = load_model("_ALL")
+    train_kmeans()
     correct_slideshow()
 
