@@ -49,8 +49,6 @@ def obtain_fresh_model(minibatchsize):
 """ Returns a non-batched version of kmeans. That is, it obtains a kmeans model using the FULL training set"""
 def train_kmeans():
     kmeans = KMeans(n_clusters=50, random_state=0)
-    print(get_all_descriptors('train').shape)
-    exit()
     kmeans.fit(get_all_descriptors('train'))
     joblib.dump(kmeans, f'kmeans/model_cluster{"_ALL"}_{iter}.joblib')
     return kmeans
@@ -256,8 +254,15 @@ def mistake_slideshow():
         index = np.random.randint(0, high=len(incorrects))
         tup = incorrects[index]
         impath = f'{base_path}/{tup[2]}/{"test"}/{tup[0]}.jpg'
+        coords = np.array(open_csv(tup[2], 'test', tup[0]+'_coords'))
+
+    
         img = mpimg.imread(impath)
-        img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+        img = cv.cvtColor(img,cv.COLOR_GRAY2RGB)
+
+        for coord in coords:
+            img = cv.circle(img, list(coord.astype(int)), 3, (178, 34, 34), 1)
+        # img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
         imgplot = plt.imshow(img)
         incorrects.pop(index)
         plt.title(f'Image {tup[0]} of the {tup[2]} Directory')
@@ -293,10 +298,9 @@ def correct_slideshow():
         plt.title(f'Image {tup[0]} of the {tup[2]} Directory')
         plt.xlabel(f'The Classifier Thinks This is A {tup[1]}.        {len(incorrects)} Correct Identifications Remaining')
         plt.show()
-    
 
 if __name__ == '__main__':
     knn = load_model("_ALL")
     train_kmeans()
-    correct_slideshow()
+    mistake_slideshow()
 
