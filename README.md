@@ -1,6 +1,6 @@
-# Computer Vision Assignment 5
+# Facial Rec Using PCA and Bag-Of-Words
 
-This assignment involves dimensionality reductions like PCA and Bag-Of-Words to reduce the dimension of a datapoint we wish to classify, whilst maintaining as much of the original information as possible. The assignment consists of two questions, we explain how to run each of them below.
+This illustration involves dimensionality reductions like PCA and Bag-Of-Words to reduce the dimension of a datapoint we wish to classify, whilst maintaining as much of the original information as possible. The assignment consists of two questions, we explain how to run each of them below.
 
 ##
 PUT THE RESOURCES DIRECTORY INLINE WITH CODE AND REPORT! Spell resources with a small `r` please.
